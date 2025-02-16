@@ -1,38 +1,79 @@
+// Time:  O(b^(d/2)), b is the branch factor of bfs, d is the result depth
+// Space: O(w * l), w is the number of words, l is the max length of words
+
+// two-end bfs
 class Solution {
 public:
     int ladderLength(string beginWord, string endWord, vector<string>& wordList) {
-        unordered_set<string> words(wordList.begin(), wordList.end());
-        if (!words.count(endWord)) return 0;
-        queue<string> q1{ {beginWord} };
-        queue<string> q2{ {endWord} };
-        unordered_map<string, int> m1;
-        unordered_map<string, int> m2;
-        m1[beginWord] = 0;
-        m2[endWord] = 0;
-        while (!q1.empty() && !q2.empty()) {
-            int t = q1.size() <= q2.size() ? extend(m1, m2, q1, words) : extend(m2, m1, q2, words);
-            if (t != -1) return t + 1;
+        unordered_set<string> words(cbegin(wordList), cend(wordList));
+        if (!words.count(endWord)) {
+            return 0;
+        }
+        int ladder = 2;
+        unordered_set<string> left = {beginWord}, right = {endWord};
+        while (!empty(left)) {
+            for (const auto& word : left) {
+                words.erase(word);
+            }
+            unordered_set<string> new_left;
+            for (const auto& word : left) {
+                auto new_word = word;
+                for (int i = 0; i < size(new_word); ++i) {
+                    char prev = new_word[i];
+                    for (int j = 0; j < 26; ++j) {
+                        new_word[i] = 'a' + j;
+                        if (!words.count(new_word)) {
+                            continue;
+                        }
+                        if (right.count(new_word)) {
+                            return ladder;
+                        }
+                        new_left.emplace(new_word);
+                    }
+                    new_word[i] = prev;
+                }
+            }
+            left = move(new_left);
+            ++ladder;
+            if (size(left) > size(right)) {
+                swap(left, right);
+            }
         }
         return 0;
     }
+};
 
-    int extend(unordered_map<string, int>& m1, unordered_map<string, int>& m2, queue<string>& q, unordered_set<string>& words) {
-        for (int i = q.size(); i > 0; --i) {
-            string s = q.front();
-            int step = m1[s];
-            q.pop();
-            for (int j = 0; j < s.size(); ++j) {
-                char ch = s[j];
-                for (char k = 'a'; k <= 'z'; ++k) {
-                    s[j] = k;
-                    if (!words.count(s) || m1.count(s)) continue;
-                    if (m2.count(s)) return step + 1 + m2[s];
-                    m1[s] = step + 1;
-                    q.push(s);
-                }
-                s[j] = ch;
-            }
+// Time:  O(b^d), b is the branch factor of bfs, d is the result depth
+// Space: O(w * l), w is the number of words, l is the max length of words
+class Solution2 {
+public:
+    int ladderLength(string beginWord, string endWord, vector<string>& wordList) {
+        unordered_set<string> lookup(cbegin(wordList), cend(wordList));
+        if (!lookup.count(endWord)) {
+            return 0;
         }
-        return -1;
+        int ladder = 2;
+        for (vector<string> q = {beginWord}; !q.empty(); ++ladder) {
+            vector<string> new_q;
+            for (const auto& word : q) {
+                auto new_word = word;
+                for (int i = 0; i < new_word.length(); ++i) {
+                    char prev = new_word[i];
+                    for (int j = 0; j < 26; ++j) {
+                        new_word[i] = 'a' + j;
+                        if (new_word == endWord) {
+                            return ladder;
+                        }
+                        if (lookup.count(new_word)) {
+                            lookup.erase(new_word);
+                            new_q.emplace_back(new_word);
+                        }
+                    }
+                    new_word[i] = prev;
+                }
+            }
+            q = move(new_q);
+        }
+        return 0;
     }
 };
